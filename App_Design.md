@@ -52,3 +52,72 @@ This app will initially focus on the major joints of the body such as:
     knee
     ankle
 these are the most common types of injuries in the body
+
+
+
+
+
+import React, { useState } from 'react';
+import {View, TextInput, Button, Text } from 'react-native';
+
+export default function LoginScreen()
+{
+    const [username, setUsername] = useState('');
+    const [passowrd, setPassword] = useState('');
+    const [error, setError] = useState('');
+
+    const handleLogin = async () => 
+    {
+        try 
+        {
+            const response = await fetch('https://your-api.com/login', 
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+
+          const data = await response.json();  
+
+          if (response.ok)
+          {
+            console.log('Logged in!', data);
+            // Save Token here
+          }
+          else
+          {
+            setError(data.message || 'Login failed');
+          }
+        } 
+        
+        catch (err) 
+        {
+          setError('Network Error');  
+        }     
+    };
+
+    return
+    (
+        <View>
+            <TextInput
+                placeholder = 'Username'
+                value = {username}
+                onChangeText = {setUsername}
+            />
+
+            {error ? <Text> {error} </Text> : null}
+
+            <Button title = "Login" onPress = {handleLogin} />
+        </View>
+    );
+
+    type Screen = 'login' | 'signup' | 'reset';
+
+    const [screen, setScreen] = useState<Screen>('login');
+
+    if (!user)
+    {
+        if (screen === 'signup') return <SignupScreen />;
+        if (screen === 'reset') return <ResetPasswordScreen />;
+    }
+}

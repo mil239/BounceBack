@@ -1,1 +1,0 @@
-const { joint, answers } = route.params;
