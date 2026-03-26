@@ -1,5 +1,13 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import { useState } from 'react';
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+
+type RootStackParamList = 
+{
+    Injury: { joint: string };
+    Recovery: { joint: string; answers: string[] };
+};
+
 
 type Props = 
 {
@@ -8,7 +16,7 @@ type Props =
 
 <Button title = "Back" onPress = {goBack} />
 
-export default function InjuryScreen({ route, navigation })
+export default function InjuryScreen({ route, navigation }: any)
 {
     const { joint } = route.params;
 
@@ -34,25 +42,15 @@ export default function InjuryScreen({ route, navigation })
     ];
 
     const [step, setStep] = useState(0);
-    const [answers, setAnswers] = useState([]);
+    const [answers, setAnswers] = useState<string[]>([]);
 
-    const handleAnswer = (answer) => 
+    const handleAnswer = (answer: string) => 
     {
         const updated = [...answers, answer];
         setAnswers(updated);
 
-        if (step < questions.length -1) 
-        {
-            setStep(step + 1);
-        }
-        else
-        {
-            navigation.navigate('Recovery', 
-                {
-                    joint, 
-                    answers: updated,
-                });
-        }
+        if (step < questions.length -1) setStep(step + 1);
+        else navigation.navigate('Revcovery', { joint, answers: updated });
     };
 
     return

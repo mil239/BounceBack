@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
-import LoginScreen from './screens/LoginScreen';
-import SignupScreen from './screens/SignupScreen';
-import ResetPasswordScreen from './screens/ResetPasswordScreen';
-import HomeScreen from './screens/HomeScreen';
-import { subscribeToAuthChanges } from './services/auth';
+import LoginScreen from '../Screens/LoginScreen';
+import SignupScreen from '../Screens/SignupScreen';
+import ResetPasswordScreen from '../Screens/ResetPasswordScreen';
+import HomeScreen from '../Screens/HomeScreen';
+import { subscribeToAuthChanges } from '../services/auth';
 import { User } from 'firebase/auth';
 
 type Screen = 'login' | 'signup' | 'reset';

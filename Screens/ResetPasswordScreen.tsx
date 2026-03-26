@@ -23,7 +23,7 @@ export default function ResetPasswordScreen()
     return 
     (
         <View>
-            <TextInput placeholder = "Enter your email" onChnageText = {setEmail} />
+            <TextInput placeholder = "Enter your email" onChangeText = {setEmail} />
             <Button title = "Reset Password" onPress = {handleReset} />
             {message ? <Text> {message} </Text> : null}
         </View>

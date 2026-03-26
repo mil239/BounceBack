@@ -14,7 +14,7 @@ const handleSignup = async () =>
     try 
     {
       await signup(email, password);
-      setSucess('Account created! You can now log in.');
+      setSuccess('Account created! You can now log in.');
     } 
     catch (err: any) 
     {
@@ -25,7 +25,7 @@ const handleSignup = async () =>
 return
 (
     <View>
-        <TextInput placeholder = "Email" onChamgeText = {setEmail} />
+        <TextInput placeholder = "Email" onChangeText = {setEmail} />
         <TextInput placeholder = "Password" secureTextEntry onChangeText = {setPassword} />
 
         {error ? <Text> {error} </Text> : null}
