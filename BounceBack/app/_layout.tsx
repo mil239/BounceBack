@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { User } from 'firebase/auth';
 import { subscribeToAuthChanges } from '../services/auth';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     const [user, setUser] = useState<User | null>(null);
@@ -11,11 +13,23 @@ export default function RootLayout() {
     const segments = useSegments();
 
     useEffect(() => {
-        const unsubscribe = subscribeToAuthChanges((user) => {
-            setUser(user);
+        // Safety net — never stay stuck loading forever
+        const timeout = setTimeout(() => {
             setLoading(false);
+            SplashScreen.hideAsync();
+        }, 3000);
+
+        const unsubscribe = subscribeToAuthChanges((firebaseUser) => {
+            clearTimeout(timeout);
+            setUser(firebaseUser);
+            setLoading(false);
+            SplashScreen.hideAsync();
         });
-        return unsubscribe;
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     useEffect(() => {
@@ -30,13 +44,7 @@ export default function RootLayout() {
         }
     }, [user, loading, segments]);
 
-    if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>Loading...</Text>
-            </View>
-        );
-    }
+    if (loading) return null;
 
     return (
         <Stack>

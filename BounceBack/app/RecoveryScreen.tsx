@@ -2,6 +2,8 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+// Only answers[0] is used for severity — this is intentional,
+// as the first question is always the severity question.
 const getAdvice = (answers: string[], age: number): string => {
     const severity = answers[0] ?? '';
     const isSenior = age >= 60;
@@ -25,36 +27,52 @@ const getAdvice = (answers: string[], age: number): string => {
 export default function RecoveryScreen() {
     const { joint, answers, age } = useLocalSearchParams<{ joint: string; answers: string; age: string }>();
     const router = useRouter();
-    const parsedAnswers: string[] = answers ? JSON.parse(answers) : [];
-    const parsedAge = age ? parseInt(age) : 35;
+
+    // Safe parse answers
+    let parsedAnswers: string[] = [];
+    try {
+        parsedAnswers = answers ? JSON.parse(answers as string) : [];
+    } catch {
+        parsedAnswers = [];
+    }
+
+    // Safe parse age
+    const parsedAge = age ? parseInt(age as string) : null;
+
+    if (!parsedAge) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>No age provided. Please go back and try again.</Text>
+                <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
+                    <Text style={styles.buttonText}>Back to Home</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     const advice = getAdvice(parsedAnswers, parsedAge);
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            {/* Header */}
             <Text style={styles.title}>Recovery Plan</Text>
             <Text style={styles.joint}>{joint}</Text>
 
-            {/* Summary of answers */}
             <View style={styles.card}>
                 <Text style={styles.sectionTitle}>Your Answers</Text>
-                {parsedAnswers.map((answer, i) => (
-                    <Text key={i} style={styles.answer}>• {answer}</Text>
+                {parsedAnswers.map((answer) => (
+                    <Text key={answer} style={styles.answer}>• {answer}</Text>
                 ))}
             </View>
 
-            {/* Advice */}
             <View style={styles.card}>
                 <Text style={styles.sectionTitle}>Recommendation</Text>
                 <Text style={styles.advice}>{advice}</Text>
             </View>
 
-            {/* Disclaimer */}
             <Text style={styles.disclaimer}>
                 Not a medical diagnosis. Please seek care if symptoms are severe.
             </Text>
 
-            {/* Back to Home */}
             <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
                 <Text style={styles.buttonText}>Back to Home</Text>
             </TouchableOpacity>
@@ -63,62 +81,15 @@ export default function RecoveryScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 20,
-        backgroundColor: '#F9FAFB',
-        flexGrow: 1,
-        justifyContent: 'center',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 6,
-    },
-    joint: {
-        fontSize: 18,
-        textAlign: 'center',
-        color: '#2196F3',
-        marginBottom: 24,
-    },
-    card: {
-        backgroundColor: '#FFFFFF',
-        padding: 20,
-        borderRadius: 15,
-        marginBottom: 16,
-        elevation: 3,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 10,
-        color: '#444',
-    },
-    answer: {
-        fontSize: 15,
-        color: '#555',
-        marginBottom: 4,
-    },
-    advice: {
-        fontSize: 15,
-        color: '#333',
-        lineHeight: 22,
-    },
-    disclaimer: {
-        fontSize: 12,
-        textAlign: 'center',
-        color: '#999',
-        marginBottom: 20,
-    },
-    button: {
-        backgroundColor: '#2196F3',
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
+    container:    { padding: 20, backgroundColor: '#F9FAFB', flexGrow: 1, justifyContent: 'center' },
+    title:        { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 6 },
+    joint:        { fontSize: 18, textAlign: 'center', color: '#2196F3', marginBottom: 24 },
+    card:         { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 15, marginBottom: 16, elevation: 3 },
+    sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 10, color: '#444' },
+    answer:       { fontSize: 15, color: '#555', marginBottom: 4 },
+    advice:       { fontSize: 15, color: '#333', lineHeight: 22 },
+    disclaimer:   { fontSize: 12, textAlign: 'center', color: '#999', marginBottom: 20 },
+    errorText:    { fontSize: 16, textAlign: 'center', color: '#333', marginBottom: 24 },
+    button:       { backgroundColor: '#2196F3', padding: 16, borderRadius: 12, alignItems: 'center' },
+    buttonText:   { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
