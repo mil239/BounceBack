@@ -1,6 +1,7 @@
-
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { saveRecoveryPlan } from '../services/firestore';
 
 // Only answers[0] is used for severity — this is intentional,
 // as the first question is always the severity question.
@@ -39,18 +40,24 @@ export default function RecoveryScreen() {
     // Safe parse age
     const parsedAge = age ? parseInt(age as string) : null;
 
+    const advice = parsedAge ? getAdvice(parsedAnswers, parsedAge) : null;
+
+    // Auto-save recovery plan when screen loads
+    useEffect(() => {
+        if (!parsedAge || !advice || !joint) return;
+        saveRecoveryPlan(joint, parsedAnswers, advice);
+    }, []);
+
     if (!parsedAge) {
         return (
             <View style={styles.container}>
                 <Text style={styles.errorText}>No age provided. Please go back and try again.</Text>
-                <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
+                <TouchableOpacity style={styles.button} onPress={() => router.replace('/' as any)}>
                     <Text style={styles.buttonText}>Back to Home</Text>
                 </TouchableOpacity>
             </View>
         );
     }
-
-    const advice = getAdvice(parsedAnswers, parsedAge);
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -73,7 +80,7 @@ export default function RecoveryScreen() {
                 Not a medical diagnosis. Please seek care if symptoms are severe.
             </Text>
 
-            <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}>
+            <TouchableOpacity style={styles.button} onPress={() => router.replace('/' as any)}>
                 <Text style={styles.buttonText}>Back to Home</Text>
             </TouchableOpacity>
         </ScrollView>

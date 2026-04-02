@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { saveExerciseSession } from '../services/firestore';
 
 type AgeGroup = 'child' | 'adult' | 'senior';
 
@@ -129,9 +130,30 @@ export default function ExerciseScreen() {
     const ageGroup = !isNaN(parsedAge) ? getAgeGroup(parsedAge) : null;
 
     const [selectedJoint, setSelectedJoint] = useState<string | null>(null);
-    const [showResults, setShowResults] = useState(false);
+    const [showResults, setShowResults]     = useState(false);
+    const [saved, setSaved]                 = useState(false);
+    const [saveError, setSaveError]         = useState('');
 
     const results = selectedJoint && ageGroup ? exercises[selectedJoint][ageGroup] : [];
+
+    const handleComplete = async () => {
+        if (!selectedJoint || !ageGroup) return;
+        try {
+            await saveExerciseSession(selectedJoint, results);
+            setSaved(true);
+            setSaveError('');
+        } catch (e) {
+            setSaveError('Could not save session. Please try again.');
+        }
+    };
+
+    // Reset saved state when a new joint is selected
+    const handleJointSelect = (joint: string) => {
+        setSelectedJoint(joint);
+        setShowResults(false);
+        setSaved(false);
+        setSaveError('');
+    };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -145,7 +167,7 @@ export default function ExerciseScreen() {
                     <TouchableOpacity
                         key={joint}
                         style={[styles.jointBtn, selectedJoint === joint && styles.jointBtnActive]}
-                        onPress={() => { setSelectedJoint(joint); setShowResults(false); }}
+                        onPress={() => handleJointSelect(joint)}
                     >
                         <Text style={[styles.jointBtnText, selectedJoint === joint && styles.jointBtnTextActive]}>
                             {joint}
@@ -167,15 +189,27 @@ export default function ExerciseScreen() {
                     <Text style={styles.resultHeader}>
                         {selectedJoint} exercises for {ageGroupLabel[ageGroup]}
                     </Text>
+
                     {results.map((ex) => (
                         <View key={ex.name} style={styles.card}>
                             <Text style={styles.exName}>{ex.name}</Text>
                             <Text style={styles.exDesc}>{ex.desc}</Text>
                         </View>
                     ))}
+
                     <Text style={styles.disclaimer}>
                         Not a medical prescription. Consult a physiotherapist if you have existing injuries.
                     </Text>
+
+                    {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
+
+                    <TouchableOpacity
+                        style={[styles.button, saved && styles.buttonDisabled]}
+                        onPress={handleComplete}
+                        disabled={saved}
+                    >
+                        <Text style={styles.buttonText}>{saved ? 'Session Saved ✓' : 'Mark as Complete'}</Text>
+                    </TouchableOpacity>
                 </View>
             )}
         </ScrollView>
@@ -199,4 +233,5 @@ const styles = StyleSheet.create({
     exName:             { fontSize: 16, fontWeight: '600', marginBottom: 4 },
     exDesc:             { fontSize: 14, color: '#555' },
     disclaimer:         { fontSize: 12, textAlign: 'center', color: '#999', marginTop: 8, marginBottom: 20 },
+    error:              { color: 'red', textAlign: 'center', marginBottom: 10 },
 });

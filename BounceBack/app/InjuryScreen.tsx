@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { saveInjuryReport } from '../services/firestore';
 
 const questions = [
     {
@@ -24,18 +25,21 @@ export default function InjuryScreen() {
     const { joint, age } = useLocalSearchParams<{ joint: string; age: string }>();
     const router = useRouter();
 
-    const [step, setStep] = useState(0);
+    const [step, setStep]       = useState(0);
     const [answers, setAnswers] = useState<string[]>([]);
 
-    const handleAnswer = (answer: string) => {
+    const handleAnswer = async (answer: string) => {
         const updated = [...answers, answer];
         setAnswers(updated);
 
         if (step < questions.length - 1) {
             setStep(step + 1);
         } else {
+            // Save injury report to Firestore before navigating
+            await saveInjuryReport(joint, updated, questions);
+
             router.push({
-                pathname: '/Recovery',
+                pathname: '/Recovery' as any,
                 params: { joint, age, answers: JSON.stringify(updated) },
             });
         }
