@@ -1,5 +1,5 @@
-import { collection, addDoc, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
-import { auth, db } from './firebase';  // ← import both from firebase.ts
+import { addDoc, collection, getDocs, orderBy, query, Timestamp } from 'firebase/firestore';
+import { auth, db } from './firebase'; // ← import both from firebase.ts
 
 // Save a completed exercise session
 export const saveExerciseSession = async (joint: string, exercises: { name: string; desc: string }[]) => {
@@ -38,7 +38,7 @@ export const saveInjuryReport = async (
 
     const report = questions.map((q, i) => ({
         question: q.question,
-        answer: answers[i],
+        answer: answers[i] ?? null,
     }));
 
     await addDoc(collection(db, 'users', user.uid, 'injuryReports'), {

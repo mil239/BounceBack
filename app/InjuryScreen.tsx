@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { saveInjuryReport } from '../services/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { auth, db } from '../services/firebase';
 
 const questions = [
     {
@@ -22,11 +23,26 @@ const questions = [
 ];
 
 export default function InjuryScreen() {
-    const { joint, age } = useLocalSearchParams<{ joint: string; age: string }>();
+    const { joint: rawJoint } = useLocalSearchParams<{ joint: string }>();
+    const joint = Array.isArray(rawJoint) ? rawJoint[0] : (rawJoint ?? "Knee");
     const router = useRouter();
 
+    const [age, setAge]         = useState<string>("25");
     const [step, setStep]       = useState(0);
     const [answers, setAnswers] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchAge = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const snap = await getDoc(doc(db, 'users', user.uid));
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.age) setAge(String(data.age));
+            }
+        };
+        fetchAge();
+    }, []);
 
     const handleAnswer = async (answer: string) => {
         const updated = [...answers, answer];
@@ -35,9 +51,6 @@ export default function InjuryScreen() {
         if (step < questions.length - 1) {
             setStep(step + 1);
         } else {
-            // Save injury report to Firestore before navigating
-            await saveInjuryReport(joint, updated, questions);
-
             router.push({
                 pathname: '/RecoveryScreen' as any,
                 params: { joint, age, answers: JSON.stringify(updated) },
@@ -47,22 +60,18 @@ export default function InjuryScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Progress */}
             <Text style={styles.progress}>
                 Step {step + 1} of {questions.length}
             </Text>
 
-            {/* Joint Title */}
             <Text style={styles.joint}>{joint}</Text>
 
-            {/* Question Card */}
             <View style={styles.card}>
                 <Text style={styles.question}>
                     {questions[step].question}
                 </Text>
             </View>
 
-            {/* Answer Buttons */}
             <View style={styles.options}>
                 {questions[step].options.map((option) => (
                     <TouchableOpacity

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { auth, db } from '../services/firebase';
 import { saveExerciseSession } from '../services/firestore';
 
 type AgeGroup = 'child' | 'adult' | 'senior';
@@ -114,6 +115,23 @@ const exercises: Record<string, Record<AgeGroup, { name: string; desc: string }[
             { name: 'Heel-Toe Rocks',      desc: 'Rock from heel to toe while holding a chair, 15 reps.' },
         ],
     },
+    Back: {
+        child:  [
+            { name: 'Cat-Cow Stretch',     desc: 'On all fours, alternate arching and rounding your back, 10 reps.' },
+            { name: 'Superman Hold',       desc: 'Lie face down, lift arms and legs, hold 3s, 10 reps.' },
+            { name: 'Child\'s Pose',       desc: 'Kneel and stretch arms forward on the floor, hold 20s.' },
+        ],
+        adult:  [
+            { name: 'Deadbugs',            desc: '3 sets of 10, lower opposite arm and leg slowly.' },
+            { name: 'Bird Dogs',           desc: '3 sets of 10 each side, keep back flat.' },
+            { name: 'Glute Bridges',       desc: '3 sets of 15, engage core throughout.' },
+        ],
+        senior: [
+            { name: 'Seated Back Ext.',    desc: 'Sit upright, gently arch back, hold 5s, 10 reps.' },
+            { name: 'Knee-to-Chest',       desc: 'Lie down, pull one knee to chest, hold 20s each.' },
+            { name: 'Pelvic Tilts',        desc: 'Lie flat, flatten lower back to floor, hold 5s, 15 reps.' },
+        ],
+    },
 };
 
 const jointList = Object.keys(exercises);
@@ -125,14 +143,25 @@ const ageGroupLabel: Record<AgeGroup, string> = {
 };
 
 export default function ExerciseScreen() {
-    const { age } = useLocalSearchParams<{ age: string }>();
-    const parsedAge = parseInt(age as string);
-    const ageGroup = !isNaN(parsedAge) ? getAgeGroup(parsedAge) : null;
-
+    const [ageGroup, setAgeGroup]       = useState<AgeGroup | null>(null);
     const [selectedJoint, setSelectedJoint] = useState<string | null>(null);
     const [showResults, setShowResults]     = useState(false);
     const [saved, setSaved]                 = useState(false);
     const [saveError, setSaveError]         = useState('');
+
+    // ✅ Fetch age from Firestore
+    useEffect(() => {
+        const fetchAge = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const snap = await getDoc(doc(db, 'users', user.uid));
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.age) setAgeGroup(getAgeGroup(Number(data.age)));
+            }
+        };
+        fetchAge();
+    }, []);
 
     const results = selectedJoint && ageGroup ? exercises[selectedJoint][ageGroup] : [];
 
@@ -147,7 +176,6 @@ export default function ExerciseScreen() {
         }
     };
 
-    // Reset saved state when a new joint is selected
     const handleJointSelect = (joint: string) => {
         setSelectedJoint(joint);
         setShowResults(false);
@@ -159,7 +187,7 @@ export default function ExerciseScreen() {
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Joint Strengthening</Text>
             <Text style={styles.subtitle}>
-                {ageGroup ? `Showing exercises for: ${ageGroupLabel[ageGroup]}` : 'No age provided.'}
+                {ageGroup ? `Showing exercises for: ${ageGroupLabel[ageGroup]}` : 'Loading...'}
             </Text>
 
             <View style={styles.jointGrid}>

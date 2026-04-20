@@ -1,10 +1,10 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { auth, db } from '../services/firebase';
 import { saveRecoveryPlan } from '../services/firestore';
 
-// Only answers[0] is used for severity — this is intentional,
-// as the first question is always the severity question.
 const getAdvice = (answers: string[], age: number): string => {
     const severity = answers[0] ?? '';
     const isSenior = age >= 60;
@@ -26,8 +26,24 @@ const getAdvice = (answers: string[], age: number): string => {
 };
 
 export default function RecoveryScreen() {
-    const { joint, answers, age } = useLocalSearchParams<{ joint: string; answers: string; age: string }>();
+    const { joint, answers } = useLocalSearchParams<{ joint: string; answers: string }>();
     const router = useRouter();
+
+    // ✅ Fetch age from Firestore
+    const [parsedAge, setParsedAge] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchAge = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            const snap = await getDoc(doc(db, 'users', user.uid));
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.age) setParsedAge(Number(data.age));
+            }
+        };
+        fetchAge();
+    }, []);
 
     // Safe parse answers
     let parsedAnswers: string[] = [];
@@ -37,24 +53,18 @@ export default function RecoveryScreen() {
         parsedAnswers = [];
     }
 
-    // Safe parse age
-    const parsedAge = age ? parseInt(age as string) : null;
-
     const advice = parsedAge ? getAdvice(parsedAnswers, parsedAge) : null;
 
-    // Auto-save recovery plan when screen loads
+    // ✅ Save recovery plan once age is loaded
     useEffect(() => {
         if (!parsedAge || !advice || !joint) return;
         saveRecoveryPlan(joint, parsedAnswers, advice);
-    }, []);
+    }, [parsedAge]);
 
     if (!parsedAge) {
         return (
             <View style={styles.container}>
-                <Text style={styles.errorText}>No age provided. Please go back and try again.</Text>
-                <TouchableOpacity style={styles.button} onPress={() => router.replace('/' as any)}>
-                    <Text style={styles.buttonText}>Back to Home</Text>
-                </TouchableOpacity>
+                <Text style={styles.errorText}>Loading your profile...</Text>
             </View>
         );
     }
@@ -80,7 +90,7 @@ export default function RecoveryScreen() {
                 Not a medical diagnosis. Please seek care if symptoms are severe.
             </Text>
 
-            <TouchableOpacity style={styles.button} onPress={() => router.replace('/' as any)}>
+            <TouchableOpacity style={styles.button} onPress={() => router.replace('/HomeScreen' as any)}>
                 <Text style={styles.buttonText}>Back to Home</Text>
             </TouchableOpacity>
         </ScrollView>

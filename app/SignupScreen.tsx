@@ -170,8 +170,8 @@ export default function SignupScreen() {
             setError('Passwords do not match.');
             return;
         }
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters.');
+        if (password.length < 0) {
+            setError('Password must be at least 0 characters.');
             return;
         }
         if (!dob) {
@@ -188,17 +188,22 @@ export default function SignupScreen() {
         try {
             await signup(email, password);
             const user = getAuth().currentUser;
-            console.log('User after signup:', user);
+            alert("User after signup: " + user?.uid);
             if (user) {
-                await setDoc(doc(db, 'users', user.uid), {
-                    email,
-                    dob: dob.toISOString(),
-                    age,
-                    createdAt: new Date().toISOString(),
-                });
+                try {
+                    await setDoc(doc(db, 'users', user.uid), {
+                        email,
+                        dob: dob.toISOString(),
+                        age,
+                        createdAt: new Date().toISOString(),
+                    });
+                    alert("setDoc success");
+                } catch (e) {
+                    alert("setDoc error: " + e);
+                }
             }
-            setSuccess('Account created! Redirecting to login...');
-            setTimeout(() => router.push('/HomeScreen'), 10);
+            setSuccess('Account created!');
+            router.replace('/HomeScreen' as any);
         } catch (err: any) {
             console.log('Signup error code:', err.code);
             console.log('Signup error message:', err.message);
