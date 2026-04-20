@@ -170,8 +170,8 @@ export default function SignupScreen() {
             setError('Passwords do not match.');
             return;
         }
-        if (password.length < 0) {
-            setError('Password must be at least 0 characters.');
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters.');
             return;
         }
         if (!dob) {
